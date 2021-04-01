@@ -49,8 +49,11 @@ namespace ByteBank.View
 
             var inicio = DateTime.Now;
 
+            //Criando uma thread
             Thread thread_parte1 = new Thread(() =>
             {
+                //O Código dentro da Thread será executado em uma linha de execução diferente dos
+                // códigos anteriores. 
                 foreach (var conta in contas_parte1)
                 {
                     var resultadoProcessamento = r_Servico.ConsolidarMovimentacao(conta);
@@ -82,6 +85,7 @@ namespace ByteBank.View
                 }
             });
 
+            //É necessário iniciar as Threads para que as mesmas executem os seus respectivos códigos
             thread_parte1.Start();
             thread_parte2.Start();
             thread_parte3.Start();
