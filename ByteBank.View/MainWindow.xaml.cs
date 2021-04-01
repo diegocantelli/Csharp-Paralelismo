@@ -96,6 +96,8 @@ namespace ByteBank.View
             while (thread_parte1.IsAlive || thread_parte2.IsAlive
                 || thread_parte3.IsAlive || thread_parte4.IsAlive )
             {
+                //Usando Thread.Sleep torna a execução mais rápida, pois evita que a aplicação fique verificando
+                // a condição do loop a todo instante.
                 Thread.Sleep(250);
                 //Não vou fazer nada
             }
