@@ -90,7 +90,9 @@ namespace ByteBank.View
             thread_parte2.Start();
             thread_parte3.Start();
             thread_parte4.Start();
-
+            
+            //IsAlive -> Indica se a thread ainda está executando. Só é possível obter o resultado
+            // da execução de uma thread após ela ter finalizado a sua execução
             while (thread_parte1.IsAlive || thread_parte2.IsAlive
                 || thread_parte3.IsAlive || thread_parte4.IsAlive )
             {
