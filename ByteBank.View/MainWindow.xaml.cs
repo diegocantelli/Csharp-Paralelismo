@@ -34,6 +34,10 @@ namespace ByteBank.View
 
         private void BtnProcessar_Click(object sender, RoutedEventArgs e)
         {
+            // TaskScheduler.FromCurrentSynchronizationContext() -> retorna uma instância da thread que está sendo
+            // executada no momento. No caso será a thread principal(UI)
+            var taskSchedulerUI = TaskScheduler.FromCurrentSynchronizationContext();
+
             var contas = r_Repositorio.GetContaClientes();
 
             var resultado = new List<string>();
@@ -57,13 +61,24 @@ namespace ByteBank.View
                 //To Array executa o código 
             }).ToArray();
 
-            // Aguarda todas as threads do array finalizarem sua execução, para só assim a UI ser capaz de 
-            // ler os valores
-            Task.WaitAll(contasTarefas);
             
-            var fim = DateTime.Now;
+            //Cria uma tarefa que será concluída quando todas as tarefas dentro do array forem finalizadas.
+            // Ao contrário de WaitAll, WhenAll não bloqueia a thread principal, neste caso a thread da UI
+            Task.WhenAll(contasTarefas)
+                // O código dentro de ContinueWith só será executado quando a Task anterior for finalizada,
+                // no caso todas as tarefas dentro de Task.WhenAll(contasTarefas)
+                // task ->  Task.WhenAll(contasTarefas)
+                .ContinueWith(task =>
+                {
+                    var fim = DateTime.Now;
 
-            AtualizarView(resultado, fim - inicio);
+                    //Atualizar a view só faz sentido quando todas as tasks forem finalizadas
+                    AtualizarView(resultado, fim - inicio);
+                    //taskSchedulerUI -> indica que o código dentro de ContinueWith deverá ser executado no
+                    // contexto da Thread principal
+                }, taskSchedulerUI);
+            
+           
         }
 
         private void AtualizarView(List<String> result, TimeSpan elapsedTime)
