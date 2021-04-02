@@ -32,12 +32,8 @@ namespace ByteBank.View
             r_Servico = new ContaClienteService();
         }
 
-        private void BtnProcessar_Click(object sender, RoutedEventArgs e)
+        private async void BtnProcessar_Click(object sender, RoutedEventArgs e)
         {
-            // TaskScheduler.FromCurrentSynchronizationContext() -> retorna uma instância da thread que está sendo
-            // executada no momento. No caso será a thread principal(UI)
-            var taskSchedulerUI = TaskScheduler.FromCurrentSynchronizationContext();
-
             BtnProcessar.IsEnabled = false;
 
             var contas = r_Repositorio.GetContaClientes();
@@ -46,44 +42,30 @@ namespace ByteBank.View
 
             var inicio = DateTime.Now;
 
-            ConsolidarContas(contas)
-                .ContinueWith(task =>
-                {
-                    var fim = DateTime.Now;
-                    //task.Result -> Irá retornar a lista de strings, que é o retorno desta task
-                    var resultado = task.Result;
-                    AtualizarView(resultado, fim - inicio);
-                }, taskSchedulerUI)
-                .ContinueWith(task =>
-                {
-                    BtnProcessar.IsEnabled = true;
-                });
+            //Await -> Irá aguardar o resultado da task ConsolidarContas
+            var resultado = await ConsolidarContas(contas);
+
+            var fim = DateTime.Now;
+            AtualizarView(resultado, fim - inicio);
+            BtnProcessar.IsEnabled = true;
         }
 
-        private Task<List<String>> ConsolidarContas(IEnumerable<ContaCliente> contas)
+        private async Task<String[]> ConsolidarContas(IEnumerable<ContaCliente> contas)
         {
-            var resultado = new List<string>();
-
             var tasks = contas.Select(conta =>
             {
-                return Task.Factory.StartNew(() =>
-                {
-                    var contaResultado = r_Servico.ConsolidarMovimentacao(conta);
-                    resultado.Add(contaResultado);
-                });
+                return Task.Factory.StartNew(() => r_Servico.ConsolidarMovimentacao(conta));
             });
 
-            //Retornando uma Tarefa que também possui retorno
-            return Task.WhenAll(tasks).ContinueWith(t => {
-                return resultado;
-            });
+            var res = await Task.WhenAll(tasks);
 
+            return res;
         }
 
-        private void AtualizarView(List<String> result, TimeSpan elapsedTime)
+        private void AtualizarView(IEnumerable<String> result, TimeSpan elapsedTime)
         {
             var tempoDecorrido = $"{ elapsedTime.Seconds }.{ elapsedTime.Milliseconds} segundos!";
-            var mensagem = $"Processamento de {result.Count} clientes em {tempoDecorrido}";
+            var mensagem = $"Processamento de {result.Count()} clientes em {tempoDecorrido}";
 
             LstResultados.ItemsSource = result;
             TxtTempo.Text = mensagem;
