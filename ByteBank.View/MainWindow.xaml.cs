@@ -54,7 +54,7 @@ namespace ByteBank.View
                     var resultadoConta = r_Servico.ConsolidarMovimentacao(conta);
                     resultado.Add(resultadoConta);
                 });
-                //To Array executa o código
+                //To Array executa o código 
             }).ToArray();
 
             // Aguarda todas as threads do array finalizarem sua execução, para só assim a UI ser capaz de 
