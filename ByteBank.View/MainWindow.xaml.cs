@@ -38,7 +38,8 @@ namespace ByteBank.View
 
             var contas = r_Repositorio.GetContaClientes();
 
-            AtualizarView(new List<string>(), TimeSpan.Zero);
+            PgsProgresso.Maximum = contas.Count();
+            LimparView();
 
             var inicio = DateTime.Now;
 
@@ -52,9 +53,24 @@ namespace ByteBank.View
 
         private async Task<String[]> ConsolidarContas(IEnumerable<ContaCliente> contas)
         {
+            // Neste momento o contexto da thread é o da UI
+            // Só muda o contexto quando este trecho for executado dentro de uma Task
+            var taskSchedulerGui = TaskScheduler.FromCurrentSynchronizationContext();
+
             var tasks = contas.Select(conta =>
             {
-                return Task.Factory.StartNew(() => r_Servico.ConsolidarMovimentacao(conta));
+                return Task.Factory.StartNew(() => {
+                   var resultadoConsolidacao = r_Servico.ConsolidarMovimentacao(conta);
+
+                    // Incrementa a barra de progresso, passando o contexto da Thread de UI como parâmetro
+                    Task.Factory.StartNew(() => PgsProgresso.Value++,
+                        CancellationToken.None,
+                        TaskCreationOptions.None,
+                        taskSchedulerGui
+                    );
+                    
+                    return resultadoConsolidacao;
+                });
             });
 
             var res = await Task.WhenAll(tasks);
@@ -69,6 +85,13 @@ namespace ByteBank.View
 
             LstResultados.ItemsSource = result;
             TxtTempo.Text = mensagem;
+        }
+
+        private void LimparView()
+        {
+            LstResultados.ItemsSource = null;
+            TxtTempo.Text = null;
+            PgsProgresso.Value = 0;
         }
 
         // Ao usar Async Await, o compilador irá executar a segunda linha em uma Task diferente
