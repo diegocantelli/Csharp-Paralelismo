@@ -36,71 +36,30 @@ namespace ByteBank.View
         {
             var contas = r_Repositorio.GetContaClientes();
 
-            var contasQuantidadePorThread = contas.Count() / 4;
-
-            var contas_parte1 = contas.Take(contasQuantidadePorThread);
-            var contas_parte2 = contas.Skip(contasQuantidadePorThread).Take(contasQuantidadePorThread);
-            var contas_parte3 = contas.Skip(contasQuantidadePorThread*2).Take(contasQuantidadePorThread);
-            var contas_parte4 = contas.Skip(contasQuantidadePorThread*3);
-
             var resultado = new List<string>();
 
             AtualizarView(new List<string>(), TimeSpan.Zero);
 
             var inicio = DateTime.Now;
 
-            //Criando uma thread
-            Thread thread_parte1 = new Thread(() =>
+            //Para cada conta na lista será criada uma nova Task
+            var contasTarefas = contas.Select(conta =>
             {
-                //O Código dentro da Thread será executado em uma linha de execução diferente dos
-                // códigos anteriores. 
-                foreach (var conta in contas_parte1)
+                //Task.Factory.StartNew -> Abstrai a necessidade da criação de threads, a própria função
+                // se ocupa de verificar o processamento e os núcleos disponíveis ou menos sobrecarregados para
+                // executar o código
+                return Task.Factory.StartNew(() =>
                 {
-                    var resultadoProcessamento = r_Servico.ConsolidarMovimentacao(conta);
-                    resultado.Add(resultadoProcessamento);
-                }
-            });
-            Thread thread_parte2 = new Thread(() =>
-            {
-                foreach (var conta in contas_parte2)
-                {
-                    var resultadoProcessamento = r_Servico.ConsolidarMovimentacao(conta);
-                    resultado.Add(resultadoProcessamento);
-                }
-            });
-            Thread thread_parte3 = new Thread(() =>
-            {
-                foreach (var conta in contas_parte3)
-                {
-                    var resultadoProcessamento = r_Servico.ConsolidarMovimentacao(conta);
-                    resultado.Add(resultadoProcessamento);
-                }
-            });
-            Thread thread_parte4 = new Thread(() =>
-            {
-                foreach (var conta in contas_parte4)
-                {
-                    var resultadoProcessamento = r_Servico.ConsolidarMovimentacao(conta);
-                    resultado.Add(resultadoProcessamento);
-                }
-            });
+                    //código que será executado na task
+                    var resultadoConta = r_Servico.ConsolidarMovimentacao(conta);
+                    resultado.Add(resultadoConta);
+                });
+                //To Array executa o código
+            }).ToArray();
 
-            //É necessário iniciar as Threads para que as mesmas executem os seus respectivos códigos
-            thread_parte1.Start();
-            thread_parte2.Start();
-            thread_parte3.Start();
-            thread_parte4.Start();
-            
-            //IsAlive -> Indica se a thread ainda está executando. Só é possível obter o resultado
-            // da execução de uma thread após ela ter finalizado a sua execução
-            while (thread_parte1.IsAlive || thread_parte2.IsAlive
-                || thread_parte3.IsAlive || thread_parte4.IsAlive )
-            {
-                //Usando Thread.Sleep torna a execução mais rápida, pois evita que a aplicação fique verificando
-                // a condição do loop a todo instante.
-                Thread.Sleep(250);
-                //Não vou fazer nada
-            }
+            // Aguarda todas as threads do array finalizarem sua execução, para só assim a UI ser capaz de 
+            // ler os valores
+            Task.WaitAll(contasTarefas);
             
             var fim = DateTime.Now;
 
