@@ -1,21 +1,12 @@
 ﻿using ByteBank.Core.Model;
 using ByteBank.Core.Repository;
 using ByteBank.Core.Service;
+using ByteBank.View.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace ByteBank.View
 {
@@ -43,32 +34,26 @@ namespace ByteBank.View
 
             var inicio = DateTime.Now;
 
+            var byteBankProgress = new ByteBankProgress<string>(str => PgsProgresso.Value++);
+
             //Await -> Irá aguardar o resultado da task ConsolidarContas
-            var resultado = await ConsolidarContas(contas);
+            var resultado = await ConsolidarContas(contas, byteBankProgress);
 
             var fim = DateTime.Now;
             AtualizarView(resultado, fim - inicio);
             BtnProcessar.IsEnabled = true;
         }
 
-        private async Task<String[]> ConsolidarContas(IEnumerable<ContaCliente> contas)
+        private async Task<String[]> ConsolidarContas(IEnumerable<ContaCliente> contas, IProgress<string> reportadorDeProgresso)
         {
-            // Neste momento o contexto da thread é o da UI
-            // Só muda o contexto quando este trecho for executado dentro de uma Task
-            var taskSchedulerGui = TaskScheduler.FromCurrentSynchronizationContext();
-
             var tasks = contas.Select(conta =>
             {
-                return Task.Factory.StartNew(() => {
-                   var resultadoConsolidacao = r_Servico.ConsolidarMovimentacao(conta);
+                return Task.Factory.StartNew(() =>
+                {
+                    var resultadoConsolidacao = r_Servico.ConsolidarMovimentacao(conta);
 
-                    // Incrementa a barra de progresso, passando o contexto da Thread de UI como parâmetro
-                    Task.Factory.StartNew(() => PgsProgresso.Value++,
-                        CancellationToken.None,
-                        TaskCreationOptions.None,
-                        taskSchedulerGui
-                    );
-                    
+                    reportadorDeProgresso.Report(resultadoConsolidacao);
+
                     return resultadoConsolidacao;
                 });
             });
