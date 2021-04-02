@@ -70,5 +70,11 @@ namespace ByteBank.View
             LstResultados.ItemsSource = result;
             TxtTempo.Text = mensagem;
         }
+
+        // Ao usar Async Await, o compilador irá executar a segunda linha em uma Task diferente
+        // e a terceira linha será executada após o término da 2 linhas, mas no mesmo contexto da primeira linha
+        //btnCalcular.IsEnabled = false;
+        //var A = await CalculaRaiz(100);
+        //btnCalcular.IsEnabled = true;
     }
 }
