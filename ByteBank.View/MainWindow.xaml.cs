@@ -116,5 +116,11 @@ namespace ByteBank.View
         //btnCalcular.IsEnabled = false;
         //var A = await CalculaRaiz(100);
         //btnCalcular.IsEnabled = true;
+
+
+        //O método ConfigureAwait(false) configura a tarefa para que a continuação após o await não tenha 
+        //que ser executada no contexto do chamador, evitando possíveis deadlocks("bloqueios mortais" na thread). 
+        //Com.ConfigureAwait(false), o código pode rodar numa outra thread(do thread pool) e assim evitamos 
+        //o deadlock.
     }
 }
