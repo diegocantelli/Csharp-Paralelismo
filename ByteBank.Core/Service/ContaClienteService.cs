@@ -3,19 +3,33 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ByteBank.Core.Service
 {
     public class ContaClienteService
     {
+        //Método criado para tornar a aplicação retro compatível
         public string ConsolidarMovimentacao(ContaCliente conta)
+        {
+            return ConsolidarMovimentacao(conta, CancellationToken.None);
+        }
+
+        public string ConsolidarMovimentacao(ContaCliente conta, CancellationToken ct)
         {
             var soma = 0m;
 
+            //Este laço é um ponto onde segura o processamento da cpu, causando uma demora
+            // no caso do usuário decidir cancelar a operação
+            // por este motivo será valida aqui se o usuário solicitou o cancelamento desta operação
             foreach (var movimento in conta.Movimentacoes)
+            {
+                ct.ThrowIfCancellationRequested();
                 soma += movimento.Valor * FatorDeMultiplicacao(movimento.Data);
+            }
 
+            ct.ThrowIfCancellationRequested();
             AtualizarInvestimentos(conta);
             return $"Cliente {conta.NomeCliente} tem saldo atualizado de R${soma.ToString("#00.00")}";
         }
